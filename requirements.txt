@@ -1,5 +1,6 @@
-aiogram
+aiogram==2.25.2
 gTTS
 SpeechRecognition
 pydub
 ffmpeg-python
+
