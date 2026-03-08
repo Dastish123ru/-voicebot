@@ -1,3 +1,4 @@
+yaml
 services:
   - type: worker
     name: telegram-voice-bot
@@ -5,4 +6,3 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python bot.py
-

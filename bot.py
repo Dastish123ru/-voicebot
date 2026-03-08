@@ -1,3 +1,4 @@
+python
 import os
 from aiogram import Bot, Dispatcher, types, executor
 from gtts import gTTS
@@ -48,4 +49,3 @@ async def handle_text(message: types.Message):
 
 if __name__ == '__main__':
     executor.start_polling(dp)
-
