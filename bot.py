@@ -1,7 +1,8 @@
 import os
 import asyncio
+from threading import Thread
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
 from gtts import gTTS
 import speech_recognition as sr
 
@@ -10,16 +11,28 @@ API_TOKEN = '7647091828:AAGOGqNOtHGRYnTbagsbB5VuSMgU6Rsv9_A'
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
+# Фиктивный веб-сервер чтобы Render не убивал сервис
+class DummyHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b'OK')
+    def log_message(self, format, *args):
+        pass
+
+def run_dummy_server():
+    port = int(os.environ.get('PORT', 10000))
+    server = HTTPServer(('0.0.0.0', port), DummyHandler)
+    server.serve_forever()
+
 @dp.message(lambda message: message.voice is not None)
 async def handle_voice(message: types.Message):
     file_info = await bot.get_file(message.voice.file_id)
     file_path = file_info.file_path
     await bot.download_file(file_path, "input.ogg")
 
-    # Конвертация ogg в wav
     os.system("ffmpeg -i input.ogg input.wav -y")
 
-    # Распознавание речи
     recognizer = sr.Recognizer()
     with sr.AudioFile("input.wav") as source:
         audio = recognizer.record(source)
@@ -28,13 +41,11 @@ async def handle_voice(message: types.Message):
     except Exception:
         text = "Не удалось распознать голосовое сообщение."
 
-    # Озвучка ответа
     tts = gTTS(text, lang='ru')
     tts.save('voice.ogg')
     with open('voice.ogg', 'rb') as voice:
         await message.answer_voice(voice)
 
-    # Очистка файлов
     for f in ['input.ogg', 'input.wav', 'voice.ogg']:
         if os.path.exists(f):
             os.remove(f)
@@ -49,6 +60,7 @@ async def handle_text(message: types.Message):
     os.remove('voice.ogg')
 
 async def main():
+    Thread(target=run_dummy_server, daemon=True).start()
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
